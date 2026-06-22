@@ -225,6 +225,9 @@
     </div>
 
     <div class="view" id="view-historial">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="historial-btn" onclick="cargarHistorialDesdeServidor()">Actualizar</button>
+      </div>
       <div id="lista-historial"></div>
     </div>
   </main>
@@ -288,15 +291,26 @@ const PRODUCTOS = [{"producto": "Abamectina Cibeles 1.8% x 5 lt", "um": "Litros"
 /* ============ ESTADO ============ */
 let usuarioActual = null;
 let carrito = [];
-let historial = JSON.parse(localStorage.getItem('historial_remitos_v2') || '[]');
+const API_URL = 'https://script.google.com/macros/s/AKfycbwt4pWOXsBoHUSyEGyyN295jaUOL57o9n7salBU2VxNB4Gb_h3hIKCwNQtPF6_uLpz8tw/exec';
+
+let historial = [];
+let cargandoHistorial = false;
+
+async function cargarHistorialDesdeServidor() {
+  cargandoHistorial = true;
+  try {
+    const res = await fetch(`${API_URL}?action=list`);
+    const data = await res.json();
+    historial = (data.remitos || []).sort((a, b) => b.numero - a.numero);
+  } catch (e) {
+    mostrarToast('No se pudo cargar el historial. Revisá tu conexión.');
+  }
+  cargandoHistorial = false;
+  renderHistorial();
+}
 let pendientesWA = JSON.parse(localStorage.getItem('pendientes_whatsapp_v2') || '[]');
 
-function obtenerProximoNumero() {
-  const usados = new Set(historial.map(r => r.numero));
-  let n = 1;
-  while (usados.has(n)) n++;
-  return n;
-}
+
 
 /* ============ LOGIN ============ */
 function hacerLogin() {
@@ -346,7 +360,7 @@ function mostrarApp() {
   document.getElementById('campo-retira').value = usuarioActual;
   inicializarRubros();
   renderProductos();
-  renderHistorial();
+  cargarHistorialDesdeServidor();
   checkPendientes();
 }
 
@@ -363,7 +377,7 @@ function cambiarTab(view) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
-  if (view === 'historial') renderHistorial();
+  if (view === 'historial') cargarHistorialDesdeServidor();
 }
 
 /* ============ RUBROS ============ */
@@ -452,7 +466,7 @@ function actualizarCantidad(i, val) { carrito[i].cantidad = parseFloat(val) || 0
 function quitarDelCarrito(i) { carrito.splice(i, 1); renderCarrito(); }
 
 /* ============ GENERAR REMITO (uno solo, sin separar por empresa) ============ */
-function generarRemito() {
+async function generarRemito() {
   if (carrito.length === 0) return;
   const retira = document.getElementById('campo-retira').value.trim();
   const destino = document.getElementById('campo-destino').value.trim();
@@ -460,7 +474,13 @@ function generarRemito() {
   if (!retira) { mostrarToast('Indicá quién retira'); return; }
   if (!destino) { mostrarToast('Indicá el destino (campo/lote)'); return; }
 
-  const numero = obtenerProximoNumero();
+  document.getElementById('btn-generar').disabled = true;
+  document.getElementById('btn-generar').textContent = 'Generando...';
+
+  await cargarHistorialDesdeServidor();
+  const usados = new Set(historial.map(r => r.numero));
+  let numero = 1;
+  while (usados.has(numero)) numero++;
 
   const remito = {
     numero: numero,
@@ -474,15 +494,30 @@ function generarRemito() {
     items: carrito.map(c => ({producto: c.producto, cantidad: c.cantidad, um: c.um, esManual: !!c.esManual}))
   };
 
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: `action=create&data=${encodeURIComponent(JSON.stringify(remito))}`
+    });
+  } catch (e) {
+    mostrarToast('No se pudo guardar en el servidor. Verificá tu conexión.');
+    document.getElementById('btn-generar').disabled = false;
+    document.getElementById('btn-generar').textContent = 'Generar remito';
+    return;
+  }
+
   remito.pdfBase64 = generarPDF(remito);
   historial.unshift(remito);
-  localStorage.setItem('historial_remitos_v2', JSON.stringify(historial));
 
   carrito = [];
   document.getElementById('campo-destino').value = '';
   document.getElementById('campo-observacion').value = '';
   document.getElementById('campo-retira').value = usuarioActual;
   renderCarrito();
+
+  document.getElementById('btn-generar').disabled = false;
+  document.getElementById('btn-generar').textContent = 'Generar remito';
 
   abrirModalEnvio(remito);
 }
@@ -612,6 +647,10 @@ function checkPendientes() {
 /* ============ HISTORIAL ============ */
 function renderHistorial() {
   const cont = document.getElementById('lista-historial');
+  if (cargandoHistorial) {
+    cont.innerHTML = '<div class="empty-hist">Cargando remitos...</div>';
+    return;
+  }
   if (historial.length === 0) {
     cont.innerHTML = '<div class="empty-hist">Todavía no se generaron remitos</div>';
     return;
@@ -648,16 +687,26 @@ function reenviarUno(numero) {
   if (r) abrirModalEnvio(r);
 }
 
-function eliminarRemito(idx) {
+async function eliminarRemito(idx) {
   if (usuarioActual !== ADMIN_USER) { mostrarToast('Solo Seba puede eliminar remitos'); return; }
   if (!confirm('¿Seguro que querés eliminar este remito? Esta acción no se puede deshacer.')) return;
+  const numero = historial[idx].numero;
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: `action=delete&numero=${numero}`
+    });
+  } catch (e) {
+    mostrarToast('No se pudo eliminar en el servidor.');
+    return;
+  }
   historial.splice(idx, 1);
-  localStorage.setItem('historial_remitos_v2', JSON.stringify(historial));
   renderHistorial();
   mostrarToast('Remito eliminado');
 }
 
-function abrirEdicion(idx) {
+async function abrirEdicion(idx) {
   const r = historial[idx];
   const nuevoRetira = prompt('Retira:', r.retira || r.usuario);
   if (nuevoRetira === null) return;
@@ -681,9 +730,20 @@ function abrirEdicion(idx) {
     usuario: usuarioActual,
     fecha: new Date().toLocaleDateString('es-AR') + ' ' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'})
   };
+
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: `action=update&data=${encodeURIComponent(JSON.stringify(r))}`
+    });
+  } catch (e) {
+    mostrarToast('No se pudo guardar la corrección en el servidor.');
+    return;
+  }
+
   r.pdfBase64 = generarPDF(r);
 
-  localStorage.setItem('historial_remitos_v2', JSON.stringify(historial));
   renderHistorial();
   mostrarToast('Remito corregido.');
 
