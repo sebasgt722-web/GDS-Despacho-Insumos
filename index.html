@@ -301,7 +301,9 @@ async function cargarHistorialDesdeServidor() {
   try {
     const res = await fetch(`${API_URL}?action=list`);
     const data = await res.json();
-    historial = (data.remitos || []).sort((a, b) => b.numero - a.numero);
+    historial = (data.remitos || [])
+      .map(r => ({ ...r, numero: parseInt(r.numero), numeroFormateado: String(parseInt(r.numero)).padStart(5, '0') }))
+      .sort((a, b) => b.numero - a.numero);
   } catch (e) {
     mostrarToast('No se pudo cargar el historial. Revisá tu conexión.');
   }
