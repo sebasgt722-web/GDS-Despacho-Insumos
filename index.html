@@ -145,6 +145,35 @@
     color: var(--texto-2); font-size: 13px; margin-top: 14px;
   }
 
+  /* VISTA PREVIA IMPRIMIBLE DEL REMITO */
+  .preview-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: flex-start; justify-content: center; z-index: 1001;
+    padding: 16px; overflow-y: auto;
+  }
+  .preview-overlay.show { display: flex; }
+  .preview-box {
+    background: white; border-radius: 8px; padding: 28px; max-width: 480px; width: 100%;
+    color: #1a1a1a; font-family: 'Inter', sans-serif; margin-top: 20px;
+  }
+  .preview-title { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .preview-sub { font-size: 12px; color: #555; margin-bottom: 14px; }
+  .preview-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #eee; }
+  .preview-table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 13px; }
+  .preview-table th { text-align: left; border-bottom: 2px solid #333; padding: 6px 4px; font-size: 12px; }
+  .preview-table td { padding: 6px 4px; border-bottom: 1px solid #eee; }
+  .preview-actions { display: flex; gap: 8px; margin-top: 18px; }
+  .preview-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+  .btn-print { background: var(--verde); color: white; }
+  .btn-close-preview { background: var(--fondo); color: var(--texto-2); }
+
+  @media print {
+    .preview-overlay { position: static; background: white; padding: 0; }
+    .preview-box { box-shadow: none; margin: 0; max-width: 100%; }
+    .preview-actions { display: none; }
+    body > *:not(.preview-overlay) { display: none; }
+  }
+
   .pending-banner { background: var(--amber-claro); border: 1px solid var(--amber-borde); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: var(--amber); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .pending-banner button { font-size: 11px; padding: 5px 10px; background: var(--amber); color: white; border-radius: 6px; }
 
@@ -273,6 +302,10 @@
 
     <button class="modal-close" onclick="cerrarModal()">Listo, cerrar</button>
   </div>
+</div>
+
+<div class="preview-overlay" id="preview-overlay">
+  <div class="preview-box" id="preview-content"></div>
 </div>
 
 <script>
@@ -634,15 +667,7 @@ function descargarPDF(remito) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   if (isIOS) {
-    // En iPhone/iPad: usar un <a target="_blank"> real, que Safari permite
-    // sin bloquearlo como popup, ya que se interpreta como navegación directa.
-    const link = document.createElement('a');
-    link.href = remito.pdfBase64;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    abrirVistaPrevia(remito);
   } else {
     const link = document.createElement('a');
     link.href = remito.pdfBase64;
@@ -692,6 +717,41 @@ function renderHistorial() {
 function descargarPDFhist(numero) {
   const r = historial.find(x => x.numero === numero);
   if (r) descargarPDF(r);
+}
+
+function abrirVistaPrevia(remito) {
+  const editTag = remito.editado ? ` (Corregido por ${remito.editado.usuario} el ${remito.editado.fecha})` : '';
+  const filasItems = remito.items.map(it => `
+    <tr>
+      <td>${esc(String(it.cantidad))}</td>
+      <td style="${it.esManual ? 'color:#b03030;font-weight:700;' : ''}">${esc(it.producto)}${it.esManual ? ' (NUEVO)' : ''}</td>
+      <td>${esc(it.um || '-')}</td>
+    </tr>`).join('');
+
+  const html = `
+    <div class="preview-title">Remito de despacho</div>
+    <div class="preview-sub">GDS SRL · Dep. Insumos Charata${editTag}</div>
+    <div class="preview-row"><span>N°</span><strong>${esc(remito.numeroFormateado)}</strong></div>
+    <div class="preview-row"><span>Fecha</span><span>${esc(remito.fecha)} ${esc(remito.hora)}</span></div>
+    <div class="preview-row"><span>Retira</span><span>${esc(remito.retira || remito.usuario)}</span></div>
+    <div class="preview-row"><span>Destino</span><span>${esc(remito.destino)}</span></div>
+    ${remito.observacion ? `<div class="preview-row"><span>Obs.</span><span>${esc(remito.observacion)}</span></div>` : ''}
+    <table class="preview-table">
+      <thead><tr><th>Cant.</th><th>Producto</th><th>Um</th></tr></thead>
+      <tbody>${filasItems}</tbody>
+    </table>
+    <div class="preview-actions">
+      <button class="btn-print" onclick="window.print()">Imprimir / Guardar PDF</button>
+      <button class="btn-close-preview" onclick="cerrarVistaPrevia()">Cerrar</button>
+    </div>
+  `;
+
+  document.getElementById('preview-content').innerHTML = html;
+  document.getElementById('preview-overlay').classList.add('show');
+}
+
+function cerrarVistaPrevia() {
+  document.getElementById('preview-overlay').classList.remove('show');
 }
 
 function reenviarUno(numero) {
