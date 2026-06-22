@@ -499,46 +499,52 @@ function textoWhatsapp(remito) {
 function generarPDF(remito) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+  const pageWidth = 148; // ancho útil aprox en A5 horizontal de referencia interna
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.text('REMITO DE DESPACHO', 10, 14);
+  doc.setFontSize(10);
+  doc.text('GDS SRL', 10, 21);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Dep. Insumos Charata', 10, 20);
+  doc.text('Dep. Insumos Charata', 10, 27);
 
   doc.setFontSize(10);
-  doc.text(`N°: ${remito.numeroFormateado}`, 95, 14, { align: 'right' });
-  doc.text(`Fecha: ${remito.fecha}  ${remito.hora}`, 95, 20, { align: 'right' });
+  doc.text(`N°: ${remito.numeroFormateado}`, 138, 14, { align: 'right' });
+  doc.text(`Fecha: ${remito.fecha}  ${remito.hora}`, 138, 20, { align: 'right' });
   if (remito.editado) {
     doc.setTextColor(180, 100, 30);
     doc.setFontSize(8);
-    doc.text(`Corregido por ${remito.editado.usuario} el ${remito.editado.fecha}`, 95, 25, { align: 'right' });
+    doc.text(`Corregido por ${remito.editado.usuario} el ${remito.editado.fecha}`, 138, 26, { align: 'right' });
     doc.setTextColor(0,0,0);
   }
 
   doc.setLineWidth(0.3);
-  doc.line(10, 29, 95, 29);
+  doc.line(10, 32, 138, 32);
 
-  let y = 36;
+  let y = 39;
   doc.setFontSize(9);
   doc.text(`Retira: ${remito.usuario}`, 10, y); y += 6;
   doc.text(`Destino: ${remito.destino}`, 10, y); y += 6;
   if (remito.observacion) {
-    const obsLines = doc.splitTextToSize(`Obs: ${remito.observacion}`, 85);
+    const obsLines = doc.splitTextToSize(`Obs: ${remito.observacion}`, 125);
     doc.text(obsLines, 10, y);
     y += obsLines.length * 5 + 2;
   }
 
   y += 3;
-  doc.line(10, y, 95, y);
-  y += 6;
+  doc.line(10, y, 138, y);
+  y += 7;
 
+  // Columnas: Cant. (10-28) | Producto (32-105) | Um (112-138)
   doc.setFont('helvetica', 'bold');
   doc.text('Cant.', 10, y);
-  doc.text('Producto', 25, y);
-  doc.text('Um', 85, y, { align: 'right' });
-  y += 5;
+  doc.text('Producto', 32, y);
+  doc.text('Um', 138, y, { align: 'right' });
+  y += 6;
+  doc.setLineWidth(0.15);
+  doc.line(10, y - 3, 138, y - 3);
   doc.setFont('helvetica', 'normal');
 
   remito.items.forEach(it => {
@@ -547,11 +553,11 @@ function generarPDF(remito) {
       doc.setTextColor(180, 40, 40);
       doc.setFont('helvetica', 'bold');
     }
-    doc.text(String(it.cantidad), 10, y);
     const nombreTxt = it.esManual ? `${it.producto} (NUEVO)` : it.producto;
-    const prodLines = doc.splitTextToSize(nombreTxt, 55);
-    doc.text(prodLines, 25, y);
-    doc.text(it.um || '-', 85, y, { align: 'right' });
+    const prodLines = doc.splitTextToSize(nombreTxt, 73);
+    doc.text(String(it.cantidad), 10, y);
+    doc.text(prodLines, 32, y);
+    doc.text(it.um || '-', 138, y, { align: 'right' });
     if (it.esManual) {
       doc.setTextColor(0,0,0);
       doc.setFont('helvetica', 'normal');
@@ -560,7 +566,7 @@ function generarPDF(remito) {
   });
 
   y += 8;
-  doc.line(10, y, 95, y);
+  doc.line(10, y, 138, y);
   y += 8;
   doc.setFontSize(8);
   doc.text('Generado digitalmente · App Despachos Insumos', 10, y);
