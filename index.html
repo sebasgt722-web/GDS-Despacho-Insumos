@@ -361,7 +361,6 @@ function mostrarApp() {
   inicializarRubros();
   renderProductos();
   cargarHistorialDesdeServidor();
-  checkPendientes();
 }
 
 window.addEventListener('load', () => {
@@ -369,7 +368,6 @@ window.addEventListener('load', () => {
   document.getElementById('header-logo-box').innerHTML = `<img src="${LOGO_GDS}" alt="Grupo del Sur SRL">`;
   const u = localStorage.getItem('usuario_actual');
   if (u && USUARIOS[u]) { usuarioActual = u; mostrarApp(); }
-  window.addEventListener('online', checkPendientes);
 });
 
 /* ============ TABS ============ */
@@ -640,9 +638,8 @@ function descargarPDF(remito) {
   document.body.removeChild(link);
 }
 
-function checkPendientes() {
-  document.getElementById('pending-banner').style.display = 'none';
-}
+
+
 
 /* ============ HISTORIAL ============ */
 function renderHistorial() {
