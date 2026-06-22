@@ -243,7 +243,7 @@
     <div class="step-row">
       <div class="step-num">1</div>
       <div class="step-content">
-        <div class="step-text">Descargá el PDF del remito.</div>
+        <div class="step-text">Descargá o abrí el PDF del remito (en iPhone se abre en una pestaña, usá el botón compartir para guardarlo).</div>
         <button class="step-btn secondary" id="btn-descargar-pdf">⬇️ Descargar PDF</button>
       </div>
     </div>
@@ -631,12 +631,28 @@ function generarPDF(remito) {
 
 /* ============ WHATSAPP ============ */
 function descargarPDF(remito) {
-  const link = document.createElement('a');
-  link.href = remito.pdfBase64;
-  link.download = `Remito_${remito.numeroFormateado}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const isSafariIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent);
+
+  if (isSafariIOS) {
+    // En iPhone/Safari: abrir el PDF en una pestaña nueva. Desde ahí el usuario
+    // puede usar el botón de compartir nativo para guardarlo o enviarlo.
+    const win = window.open();
+    if (win) {
+      win.document.write(
+        `<title>Remito ${remito.numeroFormateado}</title>` +
+        `<iframe src="${remito.pdfBase64}" style="width:100%;height:100vh;border:none;"></iframe>`
+      );
+    } else {
+      mostrarToast('Permití las ventanas emergentes para ver el PDF');
+    }
+  } else {
+    const link = document.createElement('a');
+    link.href = remito.pdfBase64;
+    link.download = `Remito_${remito.numeroFormateado}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 
