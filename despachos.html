@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Despachos · Dep. Insumos Charata</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #2D5016; --verde-medio: #3D6B1F; --verde-claro: #EAF2DC; --verde-borde: #C4DCA0;
+    --amber: #B5762E; --amber-claro: #FBF1E2; --amber-borde: #ECCA9A;
+    --fondo: #F7F5F0; --blanco: #FFFFFF; --texto: #1A1A1A; --texto-2: #5A5A5A; --texto-3: #8A8A8A;
+    --borde: #E2DFD8; --danger: #C0392B; --danger-bg: #FBEAE8; --radius: 10px; --radius-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--fondo); color: var(--texto); min-height: 100vh; }
+  button { font-family: 'Inter', sans-serif; cursor: pointer; border: none; }
+  input, select, textarea { font-family: 'Inter', sans-serif; }
+
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-box { background: var(--blanco); border-radius: var(--radius-lg); padding: 36px 32px; width: 100%; max-width: 360px; border: 1px solid var(--borde); text-align: center; }
+  .login-icon { font-size: 40px; margin-bottom: 10px; }
+  .login-title { font-size: 19px; font-weight: 600; color: var(--verde); margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--texto-3); margin-bottom: 24px; }
+  .login-field { text-align: left; margin-bottom: 14px; }
+  .login-field label { font-size: 12px; color: var(--texto-2); display: block; margin-bottom: 5px; }
+  .login-field input { width: 100%; padding: 11px 14px; border-radius: var(--radius); border: 1px solid var(--borde); font-size: 15px; outline: none; background: var(--fondo); }
+  .login-field input:focus { border-color: var(--verde); }
+  .login-btn { width: 100%; padding: 12px; border-radius: var(--radius); background: var(--verde); color: white; font-size: 15px; font-weight: 500; margin-top: 8px; transition: background 0.15s; }
+  .login-btn:hover { background: var(--verde-medio); }
+  .login-error { color: var(--danger); font-size: 12px; margin-top: 10px; min-height: 16px; }
+
+  #app-screen { display: none; min-height: 100vh; flex-direction: column; }
+  header { background: var(--verde); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-icon { font-size: 20px; }
+  .header-title { font-size: 15px; font-weight: 600; color: #fff; }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.55); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .user-chip { font-size: 12px; color: #fff; background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 20px; }
+  .logout-btn { font-size: 12px; color: rgba(255,255,255,0.7); background: none; }
+  .logout-btn:hover { color: #fff; }
+
+  .tabs { background: var(--blanco); border-bottom: 1px solid var(--borde); display: flex; gap: 4px; padding: 0 16px; flex-shrink: 0; overflow-x: auto; }
+  .tab { padding: 13px 16px; font-size: 13px; color: var(--texto-3); background: none; border-bottom: 2px solid transparent; white-space: nowrap; font-weight: 500; }
+  .tab.active { color: var(--verde); border-bottom-color: var(--verde); }
+
+  main { flex: 1; max-width: 720px; width: 100%; margin: 0 auto; padding: 18px 16px 40px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search-row input { flex: 1; padding: 11px 14px; border-radius: var(--radius); border: 1px solid var(--borde); font-size: 14px; outline: none; background: var(--blanco); }
+  .search-row input:focus { border-color: var(--verde); }
+  .search-row select { padding: 11px 10px; border-radius: var(--radius); border: 1px solid var(--borde); font-size: 13px; background: var(--blanco); color: var(--texto-2); }
+
+  .producto-card { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s; }
+  .producto-card:hover { border-color: var(--verde-borde); }
+  .producto-info { flex: 1; min-width: 0; }
+  .producto-nombre { font-size: 14px; font-weight: 500; color: var(--texto); }
+  .producto-meta { font-size: 12px; color: var(--texto-3); margin-top: 2px; }
+  .add-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--verde-claro); color: var(--verde); font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .no-results { text-align: center; padding: 30px 20px; color: var(--texto-3); font-size: 13px; }
+  .manual-add-box { background: var(--amber-claro); border: 1px solid var(--amber-borde); border-radius: var(--radius); padding: 12px 14px; margin-top: 8px; font-size: 13px; color: var(--amber); }
+  .manual-add-box button { background: var(--amber); color: white; font-size: 12px; padding: 6px 12px; border-radius: 6px; margin-top: 8px; }
+
+  .cart-section { margin-top: 18px; }
+  .cart-title { font-size: 12px; font-weight: 600; color: var(--texto-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .cart-item-empresa { font-size: 10px; padding: 1px 7px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+  .badge-nuevo { background: #FCEBEB; color: #791F1F; }
+  .cart-item { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .cart-item-info { flex: 1; min-width: 0; }
+  .cart-item-nombre { font-size: 13px; font-weight: 500; color: var(--texto); }
+  .cart-item-qty-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .qty-input { width: 70px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--borde); font-size: 13px; text-align: center; }
+  .cart-item-um { font-size: 12px; color: var(--texto-3); }
+  .remove-btn { color: var(--danger); font-size: 18px; background: none; flex-shrink: 0; }
+
+  .form-section { margin-top: 18px; }
+  .form-field { margin-bottom: 12px; }
+  .form-field label { font-size: 12px; color: var(--texto-2); display: block; margin-bottom: 5px; }
+  .form-field input, .form-field textarea { width: 100%; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--borde); font-size: 14px; outline: none; background: var(--blanco); }
+  .form-field input:focus, .form-field textarea:focus { border-color: var(--verde); }
+
+  .generar-btn { width: 100%; padding: 14px; border-radius: var(--radius); background: var(--verde); color: white; font-size: 15px; font-weight: 600; margin-top: 8px; }
+  .generar-btn:disabled { background: var(--borde); color: var(--texto-3); cursor: not-allowed; }
+
+  .historial-item { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; }
+  .historial-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .historial-num { font-size: 13px; font-weight: 600; color: var(--verde); font-family: 'DM Mono', monospace; }
+  .historial-fecha { font-size: 11px; color: var(--texto-3); }
+  .historial-meta { font-size: 12px; color: var(--texto-2); margin-bottom: 8px; }
+  .historial-productos { font-size: 12px; color: var(--texto-3); margin-bottom: 8px; }
+  .historial-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .historial-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; background: var(--verde-claro); color: var(--verde); border: 1px solid var(--verde-borde); }
+  .historial-btn.whatsapp { background: #E7F5E9; color: #1B6B2E; border-color: #BFE5C5; }
+  .empty-hist { text-align: center; padding: 40px 20px; color: var(--texto-3); font-size: 13px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--verde); color: white; padding: 12px 22px; border-radius: 30px; font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* MODAL POST-GENERACION */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--blanco); border-radius: var(--radius-lg); padding: 24px 22px;
+    max-width: 380px; width: 100%; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 17px; font-weight: 600; color: var(--verde); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .modal-sub { font-size: 12px; color: var(--texto-3); margin-bottom: 18px; }
+  .step-row {
+    display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--fondo);
+  }
+  .step-row:last-child { border-bottom: none; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--verde-claro); color: var(--verde);
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .step-text { font-size: 13px; color: var(--texto); margin-bottom: 8px; line-height: 1.4; }
+  .step-btn {
+    font-size: 13px; padding: 9px 16px; border-radius: var(--radius); background: var(--verde);
+    color: white; font-weight: 500; width: 100%;
+  }
+  .step-btn.secondary { background: var(--verde-claro); color: var(--verde); }
+  .step-btn.wa { background: #25D366; color: white; }
+  .modal-close {
+    width: 100%; padding: 11px; border-radius: var(--radius); background: var(--fondo);
+    color: var(--texto-2); font-size: 13px; margin-top: 14px;
+  }
+
+  .pending-banner { background: var(--amber-claro); border: 1px solid var(--amber-borde); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: var(--amber); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .pending-banner button { font-size: 11px; padding: 5px 10px; background: var(--amber); color: white; border-radius: 6px; }
+
+  @media (max-width: 480px) { main { padding: 14px 12px 30px; } }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-icon">📦</div>
+    <div class="login-title">Despachos de Insumos</div>
+    <div class="login-sub">Dep. Insumos Charata</div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="Tu nombre de usuario" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="login-field">
+      <label>Clave</label>
+      <input type="password" id="login-pass" placeholder="Tu clave" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="login-btn" id="btn-login" type="button">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app-screen">
+  <header>
+    <div class="header-left">
+      <span class="header-icon">📦</span>
+      <div>
+        <div class="header-title">Despachos</div>
+        <div class="header-sub">Dep. Insumos Charata</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="user-chip" id="user-chip"></span>
+      <button class="logout-btn" onclick="cerrarSesion()">Salir</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-view="nuevo" onclick="cambiarTab('nuevo')">Nuevo remito</button>
+    <button class="tab" data-view="historial" onclick="cambiarTab('historial')">Historial</button>
+  </div>
+
+  <main>
+    <div class="view active" id="view-nuevo">
+      <div class="search-row">
+        <input type="text" id="buscador" placeholder="Buscar producto..." oninput="renderProductos()">
+        <select id="filtro-rubro" onchange="renderProductos()">
+          <option value="">Todos los rubros</option>
+        </select>
+      </div>
+
+      <div id="lista-productos"></div>
+
+      <div class="cart-section">
+        <div class="cart-title">Productos seleccionados</div>
+        <div id="carrito"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-field">
+          <label>Destino (campo / lote)</label>
+          <input type="text" id="campo-destino" placeholder="Ej: Lote 4 - Cruz Alta">
+        </div>
+        <div class="form-field">
+          <label>Entregado a / Observación (opcional)</label>
+          <textarea id="campo-observacion" rows="2" placeholder="Ej: se entrega a contratista Pablo Tries"></textarea>
+        </div>
+        <button class="generar-btn" id="btn-generar" onclick="generarRemito()" disabled>Generar remito</button>
+      </div>
+    </div>
+
+    <div class="view" id="view-historial">
+      <div id="lista-historial"></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">✅ Remito generado</div>
+    <div class="modal-sub" id="modal-numero"></div>
+
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-text">Descargá el PDF del remito.</div>
+        <button class="step-btn secondary" id="btn-descargar-pdf">⬇️ Descargar PDF</button>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-text">Enviá el remito a <strong>Seba</strong> por WhatsApp (se abre el chat con el texto listo).</div>
+        <button class="step-btn wa" id="btn-wa-seba">📲 Abrir WhatsApp a Seba</button>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-text">Enviá también a <strong>Ramiro</strong> por WhatsApp.</div>
+        <button class="step-btn wa" id="btn-wa-ramiro">📲 Abrir WhatsApp a Ramiro</button>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-text">En cada chat de WhatsApp, tocá el clip 📎 y adjuntá el PDF que descargaste en el paso 1.</div>
+      </div>
+    </div>
+
+    <button class="modal-close" onclick="cerrarModal()">Listo, cerrar</button>
+  </div>
+</div>
+
+<script>
+/* ============ USUARIOS ============ */
+const USUARIOS = {
+  'Seba': 'Seba26', 'Ramon': 'Ramon26', 'Pablo': 'Pablo26', 'Alexis': 'Alexis26',
+  'Amilcar': 'Amilcar26', 'Jose': 'Jose26', 'Ivan': 'Ivan26'
+};
+const ADMIN_USER = 'Seba';
+const NUMERO_SEBA = '5493731507405';
+const NUMERO_RAMIRO = '5493841669338';
+
+/* ============ LISTA DE PRODUCTOS (sin stock, sin empresa) ============ */
+const PRODUCTOS = [{"producto": "Abamectina Cibeles 1.8% x 5 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Abamectina Forte 3.6% x 5 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Abridor Plus (Tidiazuron 12% + Diuron 6%) x 5 lt", "um": "Litros", "rubro": "Sin categoría"}, {"producto": "Adengo x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Ampligo (Clorantraniliprole 10 + Lambda 5) x 1 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Atrazina 90 (Atramyl) x 15 kg", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Atrazina 90 (Sigma) x 10 kg", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Azbany (Fluroxipir 28.8) x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "CARTADO (Clorantraniliprole 20 - Adama) x 1 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Capaz SC FMC (Sulfentrazone 50%) x 10 Lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Cletodim 24 Ruralco x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Compact (Lufenuron 5%) x 5 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Control Quat (Paraquat 27.6%) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Convey (Topramezone 33,6%) x 1 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Curasemilla Tebumida (Imida 23.3 + Tebuco 1.3) x 5 Lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Cycocel (Cloromecuato 75%) x 10 lt", "um": "Litros", "rubro": "Sin categoría"}, {"producto": "Darren (Flumioxazim 48) x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Decis Forte (Deltametrina 10%) x 5 Lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Dicamba Dombell Cibeles 56,6% x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Eco Rain (Antideriva) x 1 lt", "um": "Litros", "rubro": "COADYUVANTE"}, {"producto": "Eco Winer (Siliconado) x 5 lt", "um": "Litros", "rubro": "COADYUVANTE"}, {"producto": "Finesse 62.5% FMC x 150 gr", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Fipro Mil (Fipronil 25) x 1 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Flowzin (Flumioxazim 48) x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Galant Max (Haloxifop 93.5%) x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Gasoil (stockeable)", "um": "Litros", "rubro": "Sin categoría"}, {"producto": "Global Oil (Aceite 85) x 20 lt", "um": "Litros", "rubro": "COADYUVANTE"}, {"producto": "Guardian (Acetoclor 84) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Heat (Saflufenacil 70) x 350gr", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Imatron Adama (Imazapir 48) x 5 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Intrepid (metoxifenocide 24%) x 5 Lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Jaspek (2,4D ME 30%) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Lambda 25 ME (Delta) x 1 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Latium Super (Cletodim 36) x 10 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Lifeline (Glufosinato 28%) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Maíz LG 36538 Vip3 B2 (R22)", "um": "Bolsas", "rubro": "SEMILLAS"}, {"producto": "Maíz NS 7624 VIP3 CL C2C", "um": "Bolsas", "rubro": "SEMILLAS"}, {"producto": "Maíz NS 7921 VIP3 CL C2E", "um": "Bolsas", "rubro": "SEMILLAS"}, {"producto": "Metsulfuron 60 x 50gr", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Metsulfuron Dagger 60 WG x 100 Gr", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Mhoplus (Tebuconazole 25) x 20 lt", "um": "Litros", "rubro": "FUNGICIDA"}, {"producto": "Nanofos (Clorpirifos 48) x 20 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Oil SP Max (A.Metilado) x 20 lt", "um": "Litros", "rubro": "COADYUVANTE"}, {"producto": "Optimizer (A.Metilado 76,5) x 10 lt", "um": "Litros", "rubro": "COADYUVANTE"}, {"producto": "Paralelo 25 EC (Bifentrin 25%) x 5 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Paraquat 27.6 (Agroterrum) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Paraquat 27.6 (Delta Agro) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Paraquat 27.6 (EBC) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Pivot (Imazetapir 10%) x 5 Lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Pix (C. de Mepicuat 5%) x 5 lt", "um": "Litros", "rubro": "Sin categoría"}, {"producto": "Prometeo Elite (Prometrina 50) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Prometrex (Prometrina 50) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Regent (Etiprole 35 + Fipronil 25) x 10 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Roundup Control Max (Glifo 72 ea) x 15 kg", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Roundup Top (Glifo 57,5 ea) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Saitama (Terbutilazina 50) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Select UPL (Cletodim 24%) x 10 Lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Select UPL (Cletodim 36%) x 10 Lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Shennco Max (2,4D ME 30%) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Sipcaprin Max (Prometrina 50) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Solomon (Imida 21% + Betacyflutrina 9%) x 5 Lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Sorgo Granifero ADV 2550 IG AX", "um": "Bolsas", "rubro": "SEMILLAS"}, {"producto": "Sphere Max (Trifloxistrobin 37,5 + Cyproconazole 26) x 5 lt", "um": "Litros", "rubro": "FUNGICIDA"}, {"producto": "Spider (Diclosulam 84) x 500gr", "um": "Kilos", "rubro": "HERBICIDA"}, {"producto": "Spingard (Imida 35%) x 5 lt", "um": "Litros", "rubro": "INSECTICIDA"}, {"producto": "Stinger (Picoxystrobin 20 + Cyproconazole 8) x 5 lt", "um": "Litros", "rubro": "FUNGICIDA"}, {"producto": "Sulfa Fort (Sulfato de Amonio 40) x 20 lt", "um": "Litros", "rubro": "FERTILIZANTE"}, {"producto": "Sulfosato (Glifosato 62%) x 20 Lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Symphony (S-Metolaclor 96) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Taurus Elite (S-Metolaclor 45) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Timbal (Cletodim 24 Chemotecnica) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Trac 50 (Atrazina 50) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Traspect (Cletodim 24) x 20 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Voraxor (Saflufenacil + Trifludimoxazim) x 1 lt", "um": "Litros", "rubro": "HERBICIDA"}, {"producto": "Zetapyr (Imazetapir 10.6) x 20 Lt", "um": "Litros", "rubro": "HERBICIDA"}];
+
+/* ============ ESTADO ============ */
+let usuarioActual = null;
+let carrito = [];
+let historial = JSON.parse(localStorage.getItem('historial_remitos_v2') || '[]');
+let pendientesWA = JSON.parse(localStorage.getItem('pendientes_whatsapp_v2') || '[]');
+
+function obtenerProximoNumero() {
+  const usados = new Set(historial.map(r => r.numero));
+  let n = 1;
+  while (usados.has(n)) n++;
+  return n;
+}
+
+/* ============ LOGIN ============ */
+function hacerLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  const userKey = Object.keys(USUARIOS).find(k => k.toLowerCase() === u.toLowerCase());
+  if (userKey && USUARIOS[userKey].toLowerCase() === p.toLowerCase()) {
+    usuarioActual = userKey;
+    localStorage.setItem('usuario_actual', userKey);
+    mostrarApp();
+  } else {
+    document.getElementById('login-error').textContent = 'Usuario o clave incorrectos';
+  }
+}
+
+/* Listeners robustos para mobile: click normal + touchend como respaldo */
+function inicializarLogin() {
+  const btn = document.getElementById('btn-login');
+  const userInput = document.getElementById('login-user');
+  const passInput = document.getElementById('login-pass');
+
+  btn.addEventListener('click', hacerLogin);
+
+  passInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); hacerLogin(); }
+  });
+  userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); passInput.focus(); }
+  });
+}
+inicializarLogin();
+
+function cerrarSesion() {
+  usuarioActual = null;
+  localStorage.removeItem('usuario_actual');
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+function mostrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('user-chip').textContent = usuarioActual;
+  inicializarRubros();
+  renderProductos();
+  renderHistorial();
+  checkPendientes();
+}
+
+window.addEventListener('load', () => {
+  const u = localStorage.getItem('usuario_actual');
+  if (u && USUARIOS[u]) { usuarioActual = u; mostrarApp(); }
+  window.addEventListener('online', checkPendientes);
+});
+
+/* ============ TABS ============ */
+function cambiarTab(view) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (view === 'historial') renderHistorial();
+}
+
+/* ============ RUBROS ============ */
+function inicializarRubros() {
+  const rubros = [...new Set(PRODUCTOS.map(p => p.rubro))].sort();
+  const sel = document.getElementById('filtro-rubro');
+  sel.innerHTML = '<option value="">Todos los rubros</option>' +
+    rubros.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+}
+
+/* ============ BUSCADOR ============ */
+function renderProductos() {
+  const q = document.getElementById('buscador').value.trim().toLowerCase();
+  const rubro = document.getElementById('filtro-rubro').value;
+  const cont = document.getElementById('lista-productos');
+  if (!q) { cont.innerHTML = ''; return; }
+
+  let resultados = PRODUCTOS.filter(p => p.producto.toLowerCase().includes(q));
+  if (rubro) resultados = resultados.filter(p => p.rubro === rubro);
+
+  if (resultados.length === 0) {
+    cont.innerHTML = `
+      <div class="no-results">No se encontró "${esc(q)}" en la lista.</div>
+      <div class="manual-add-box">
+        Este producto no está en la lista, pero podés agregarlo igual al remito.
+        <br><button onclick="agregarManual('${esc(q)}')">Agregar "${esc(q)}" igual</button>
+      </div>`;
+    return;
+  }
+
+  cont.innerHTML = resultados.slice(0, 15).map(p => {
+    const idx = PRODUCTOS.indexOf(p);
+    return `
+    <div class="producto-card" onclick="agregarProducto(${idx})">
+      <div class="producto-info">
+        <div class="producto-nombre">${esc(p.producto)}</div>
+        <div class="producto-meta">${esc(p.rubro)} · ${esc(p.um)}</div>
+      </div>
+      <div class="add-btn">+</div>
+    </div>`;
+  }).join('');
+}
+
+function agregarProducto(idx) {
+  const p = PRODUCTOS[idx];
+  const existe = carrito.find(c => c.producto === p.producto);
+  if (existe) { mostrarToast('Ya está en la lista, ajustá la cantidad'); return; }
+  carrito.push({ producto: p.producto, um: p.um, rubro: p.rubro, cantidad: 1 });
+  document.getElementById('buscador').value = '';
+  renderProductos();
+  renderCarrito();
+}
+
+function agregarManual(nombre) {
+  carrito.push({ producto: nombre, um: '', rubro: 'Sin categoría', cantidad: 1, esManual: true });
+  document.getElementById('buscador').value = '';
+  renderProductos();
+  renderCarrito();
+  mostrarToast('Producto agregado como NUEVO (no estaba en la lista)');
+}
+
+/* ============ CARRITO ============ */
+function renderCarrito() {
+  const cont = document.getElementById('carrito');
+  if (carrito.length === 0) {
+    cont.innerHTML = '<div class="no-results">Todavía no agregaste productos</div>';
+    document.getElementById('btn-generar').disabled = true;
+    return;
+  }
+  cont.innerHTML = carrito.map((c, i) => `
+    <div class="cart-item">
+      ${c.esManual ? '<span class="cart-item-empresa badge-nuevo">NUEVO</span>' : ''}
+      <div class="cart-item-info">
+        <div class="cart-item-nombre">${esc(c.producto)}</div>
+        <div class="cart-item-qty-row">
+          <input type="number" class="qty-input" value="${c.cantidad}" min="0.01" step="any" oninput="actualizarCantidad(${i}, this.value)">
+          <span class="cart-item-um">${esc(c.um || 'unidades')}</span>
+        </div>
+      </div>
+      <button class="remove-btn" onclick="quitarDelCarrito(${i})">×</button>
+    </div>`).join('');
+  document.getElementById('btn-generar').disabled = false;
+}
+
+function actualizarCantidad(i, val) { carrito[i].cantidad = parseFloat(val) || 0; }
+function quitarDelCarrito(i) { carrito.splice(i, 1); renderCarrito(); }
+
+/* ============ GENERAR REMITO (uno solo, sin separar por empresa) ============ */
+function generarRemito() {
+  if (carrito.length === 0) return;
+  const destino = document.getElementById('campo-destino').value.trim();
+  const observacion = document.getElementById('campo-observacion').value.trim();
+  if (!destino) { mostrarToast('Indicá el destino (campo/lote)'); return; }
+
+  const numero = obtenerProximoNumero();
+
+  const remito = {
+    numero: numero,
+    numeroFormateado: String(numero).padStart(5, '0'),
+    fecha: new Date().toLocaleDateString('es-AR'),
+    hora: new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+    usuario: usuarioActual,
+    destino: destino,
+    observacion: observacion,
+    items: carrito.map(c => ({producto: c.producto, cantidad: c.cantidad, um: c.um, esManual: !!c.esManual}))
+  };
+
+  remito.pdfBase64 = generarPDF(remito);
+  historial.unshift(remito);
+  localStorage.setItem('historial_remitos_v2', JSON.stringify(historial));
+
+  carrito = [];
+  document.getElementById('campo-destino').value = '';
+  document.getElementById('campo-observacion').value = '';
+  renderCarrito();
+
+  abrirModalEnvio(remito);
+}
+
+function abrirModalEnvio(remito) {
+  document.getElementById('modal-numero').textContent = `Remito N° ${remito.numeroFormateado} · ${remito.items.length} producto(s)`;
+
+  document.getElementById('btn-descargar-pdf').onclick = () => descargarPDF(remito);
+
+  const texto = textoWhatsapp(remito);
+  document.getElementById('btn-wa-seba').onclick = () => {
+    window.location.href = `https://wa.me/${NUMERO_SEBA}?text=${encodeURIComponent(texto)}`;
+  };
+  document.getElementById('btn-wa-ramiro').onclick = () => {
+    window.location.href = `https://wa.me/${NUMERO_RAMIRO}?text=${encodeURIComponent(texto)}`;
+  };
+
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  renderHistorial();
+  cambiarTab('historial');
+}
+
+function textoWhatsapp(remito) {
+  const editTag = remito.editado ? ` (CORREGIDO ${remito.editado.fecha})` : '';
+  return `📦 Remito ${remito.numeroFormateado}${editTag}\nFecha: ${remito.fecha} ${remito.hora}\nRetira: ${remito.usuario}\nDestino: ${remito.destino}\n\n` +
+    remito.items.map(it => `• ${it.cantidad} ${it.um}${it.esManual ? ' (NUEVO)' : ''} - ${it.producto}`).join('\n') +
+    `\n\n(Adjunto el PDF del remito)`;
+}
+
+/* ============ PDF ============ */
+function generarPDF(remito) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('REMITO DE DESPACHO', 10, 14);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Dep. Insumos Charata', 10, 20);
+
+  doc.setFontSize(10);
+  doc.text(`N°: ${remito.numeroFormateado}`, 95, 14, { align: 'right' });
+  doc.text(`Fecha: ${remito.fecha}  ${remito.hora}`, 95, 20, { align: 'right' });
+  if (remito.editado) {
+    doc.setTextColor(180, 100, 30);
+    doc.setFontSize(8);
+    doc.text(`Corregido por ${remito.editado.usuario} el ${remito.editado.fecha}`, 95, 25, { align: 'right' });
+    doc.setTextColor(0,0,0);
+  }
+
+  doc.setLineWidth(0.3);
+  doc.line(10, 29, 95, 29);
+
+  let y = 36;
+  doc.setFontSize(9);
+  doc.text(`Retira: ${remito.usuario}`, 10, y); y += 6;
+  doc.text(`Destino: ${remito.destino}`, 10, y); y += 6;
+  if (remito.observacion) {
+    const obsLines = doc.splitTextToSize(`Obs: ${remito.observacion}`, 85);
+    doc.text(obsLines, 10, y);
+    y += obsLines.length * 5 + 2;
+  }
+
+  y += 3;
+  doc.line(10, y, 95, y);
+  y += 6;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Cant.', 10, y);
+  doc.text('Producto', 25, y);
+  doc.text('Um', 85, y, { align: 'right' });
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+
+  remito.items.forEach(it => {
+    if (y > 130) { doc.addPage(); y = 15; }
+    if (it.esManual) {
+      doc.setTextColor(180, 40, 40);
+      doc.setFont('helvetica', 'bold');
+    }
+    doc.text(String(it.cantidad), 10, y);
+    const nombreTxt = it.esManual ? `${it.producto} (NUEVO)` : it.producto;
+    const prodLines = doc.splitTextToSize(nombreTxt, 55);
+    doc.text(prodLines, 25, y);
+    doc.text(it.um || '-', 85, y, { align: 'right' });
+    if (it.esManual) {
+      doc.setTextColor(0,0,0);
+      doc.setFont('helvetica', 'normal');
+    }
+    y += prodLines.length * 5 + 2;
+  });
+
+  y += 8;
+  doc.line(10, y, 95, y);
+  y += 8;
+  doc.setFontSize(8);
+  doc.text('Generado digitalmente · App Despachos Insumos', 10, y);
+
+  return doc.output('datauristring');
+}
+
+/* ============ WHATSAPP ============ */
+function descargarPDF(remito) {
+  const link = document.createElement('a');
+  link.href = remito.pdfBase64;
+  link.download = `Remito_${remito.numeroFormateado}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function checkPendientes() {
+  document.getElementById('pending-banner').style.display = 'none';
+}
+
+/* ============ HISTORIAL ============ */
+function renderHistorial() {
+  const cont = document.getElementById('lista-historial');
+  if (historial.length === 0) {
+    cont.innerHTML = '<div class="empty-hist">Todavía no se generaron remitos</div>';
+    return;
+  }
+  cont.innerHTML = historial.map((r, idx) => {
+    const puedeEliminar = usuarioActual === ADMIN_USER;
+    const editTag = r.editado ? `<div style="font-size:11px;color:var(--amber);margin-bottom:6px;">✏️ Corregido por ${esc(r.editado.usuario)} el ${esc(r.editado.fecha)}</div>` : '';
+    return `
+    <div class="historial-item">
+      <div class="historial-header">
+        <span class="historial-num">N° ${r.numeroFormateado}</span>
+        <span class="historial-fecha">${r.fecha} ${r.hora}</span>
+      </div>
+      ${editTag}
+      <div class="historial-meta">Retira: ${esc(r.usuario)} · Destino: ${esc(r.destino)}</div>
+      <div class="historial-productos">${r.items.length} producto(s): ${r.items.slice(0,3).map(i=> i.esManual ? `<strong style="color:var(--danger);">${esc(i.producto)} (NUEVO)</strong>` : esc(i.producto)).join(', ')}${r.items.length>3?'...':''}</div>
+      <div class="historial-actions">
+        <button class="historial-btn" onclick='descargarPDFhist(${r.numero})'>Ver PDF</button>
+        <button class="historial-btn whatsapp" onclick='reenviarUno(${r.numero})'>Enviar WhatsApp</button>
+        <button class="historial-btn" onclick='abrirEdicion(${idx})'>Editar</button>
+        ${puedeEliminar ? `<button class="historial-btn" style="background:var(--danger-bg);color:var(--danger);border-color:#F0C7C2;" onclick='eliminarRemito(${idx})'>Eliminar</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function descargarPDFhist(numero) {
+  const r = historial.find(x => x.numero === numero);
+  if (r) descargarPDF(r);
+}
+
+function reenviarUno(numero) {
+  const r = historial.find(x => x.numero === numero);
+  if (r) abrirModalEnvio(r);
+}
+
+function eliminarRemito(idx) {
+  if (usuarioActual !== ADMIN_USER) { mostrarToast('Solo Seba puede eliminar remitos'); return; }
+  if (!confirm('¿Seguro que querés eliminar este remito? Esta acción no se puede deshacer.')) return;
+  historial.splice(idx, 1);
+  localStorage.setItem('historial_remitos_v2', JSON.stringify(historial));
+  renderHistorial();
+  mostrarToast('Remito eliminado');
+}
+
+function abrirEdicion(idx) {
+  const r = historial[idx];
+  const nuevoDestino = prompt('Destino (campo/lote):', r.destino);
+  if (nuevoDestino === null) return;
+  const nuevaObs = prompt('Observación:', r.observacion || '');
+  if (nuevaObs === null) return;
+
+  let cambioItems = confirm('¿Querés corregir también las cantidades de los productos? (Cancelar para mantenerlas igual)');
+  if (cambioItems) {
+    r.items.forEach(it => {
+      const nuevaCant = prompt(`Cantidad de "${it.producto}" (${it.um}):`, it.cantidad);
+      if (nuevaCant !== null && !isNaN(parseFloat(nuevaCant))) it.cantidad = parseFloat(nuevaCant);
+    });
+  }
+
+  r.destino = nuevoDestino;
+  r.observacion = nuevaObs;
+  r.editado = {
+    usuario: usuarioActual,
+    fecha: new Date().toLocaleDateString('es-AR') + ' ' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'})
+  };
+  r.pdfBase64 = generarPDF(r);
+
+  localStorage.setItem('historial_remitos_v2', JSON.stringify(historial));
+  renderHistorial();
+  mostrarToast('Remito corregido.');
+
+  if (confirm('¿Reenviar el remito corregido por WhatsApp ahora?')) abrirModalEnvio(r);
+}
+
+/* ============ UTILS ============ */
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function mostrarToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
