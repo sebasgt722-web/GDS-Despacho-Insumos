@@ -168,10 +168,13 @@
   .btn-close-preview { background: var(--fondo); color: var(--texto-2); }
 
   @media print {
-    .preview-overlay { position: static; background: white; padding: 0; }
-    .preview-box { box-shadow: none; margin: 0; max-width: 100%; }
-    .preview-actions { display: none; }
-    body > *:not(.preview-overlay) { display: none; }
+    #login-screen, #app-screen, .toast, .modal-overlay { display: none !important; }
+    .preview-overlay {
+      position: static !important; background: white !important; padding: 0 !important;
+      display: block !important; align-items: unset !important; justify-content: unset !important;
+    }
+    .preview-box { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
+    .preview-actions { display: none !important; }
   }
 
   .pending-banner { background: var(--amber-claro); border: 1px solid var(--amber-borde); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: var(--amber); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
